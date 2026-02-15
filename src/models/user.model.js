@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const userSchema = new Schema(
   {
@@ -49,11 +50,9 @@ const userSchema = new Schema(
 );
 
 //to convert into hash before storing in DB
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 10);
-  next();
 });
 
 //to compare the password at the time of login
@@ -71,7 +70,7 @@ userSchema.methods.generateAccessToken = function () {
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
     },
   );
 };
@@ -80,12 +79,10 @@ userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
       _id: this._id,
-      email: this.email,
-      username: this.username,
     },
-    process.env.ACCESS_TOKEN_SECRET,
+    process.env.REFRESH_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRATION,
     },
   );
 };
